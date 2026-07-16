@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leitor de Estoque</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; margin:0; padding:16px; background:#f4f4f4; }
+  #reader { width:100%; max-width:400px; margin:0 auto; border-radius:8px; overflow:hidden; }
+  #resultado { margin-top:20px; font-size:18px; padding:14px; border-radius:8px; min-height:24px; }
+  .ok{background:#d4edda;color:#155724;} .erro{background:#f8d7da;color:#721c24;} .info{background:#e2e3e5;color:#383d41;}
+  button { font-size:18px; padding:14px 24px; margin-top:16px; cursor:pointer; }
+</style>
+</head>
+<body>
+  <h2>📦 Leitor de Estoque</h2>
+  <div id="reader"></div>
+  <div id="resultado" class="info">Toque no botão para ativar a câmera</div>
+  <button id="btnAtivar">📷 Ativar câmera</button>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script>
+    // ⚠️ Troque pela URL do SEU Web App (terminando em /exec)
+    const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbzpTVKhDbbt0I7rC7jv-5mzLobDR49VeC6ezDuolJ5DxMVkl6rrM6vYbIDrvvPpgQ-T/exec";
+
+    let processando = false;
+    const scanner = new Html5Qrcode("reader");
+
+    document.getElementById('btnAtivar').addEventListener('click', () => {
+      document.getElementById('resultado').innerText = 'Solicitando câmera...';
+      scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        aoLer
+      ).then(() => {
+        document.getElementById('btnAtivar').style.display = 'none';
+        document.getElementById('resultado').innerText = 'Aponte para o QR code';
+      }).catch(err => {
+        document.getElementById('resultado').className = 'erro';
+        document.getElementById('resultado').innerText = 'Erro: ' + err;
+      });
+    });
+
+    function aoLer(codigo) {
+      if (processando) return;
+      processando = true;
+      document.getElementById('resultado').className = 'info';
+      document.getElementById('resultado').innerText = 'Processando...';
+
+      fetch(URL_APPS_SCRIPT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ codigo: codigo })
+      })
+      .then(r => r.json())
+      .then(res => {
+        const div = document.getElementById('resultado');
+        if (res.sucesso) {
+          div.className = 'ok';
+          div.innerText = `✔ ${res.nome} — restam ${res.quantidade} unidade(s)`;
+        } else {
+          div.className = 'erro';
+          div.innerText = `✘ ${res.mensagem}`;
+        }
+        setTimeout(() => { processando = false; }, 2000);
+      })
+      .catch(err => {
+        document.getElementById('resultado').className = 'erro';
+        document.getElementById('resultado').innerText = 'Erro de conexão: ' + err;
+        processando = false;
+      });
+    }
+  </script>
+</body>
+</html>
