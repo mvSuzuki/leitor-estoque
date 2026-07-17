@@ -35,9 +35,47 @@
   .btn-retirar { background:#f8d7da; border:1px solid #f1a9b0; }
   .btn-adicionar { background:#d4edda; border:1px solid #9fd6ac; }
   .btn-cancelar { background:#e2e3e5; border:1px solid #c6c8ca; margin-top:8px; width:100%; }
+
+  #modalUsuario {
+    display:none;
+    position:fixed;
+    top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.5);
+    align-items:center;
+    justify-content:center;
+    z-index:1000;
+  }
+  #modalUsuario .caixa {
+    background:#fff;
+    border-radius:10px;
+    padding:20px;
+    width:85%;
+    max-width:320px;
+    text-align:center;
+  }
+  #modalUsuario input {
+    width:100%;
+    font-size:18px;
+    padding:10px;
+    margin:14px 0;
+    box-sizing:border-box;
+  }
+  #modalUsuario button {
+    width:100%;
+    margin-top:0;
+  }
 </style>
 </head>
 <body>
+
+  <div id="modalUsuario">
+    <div class="caixa">
+      <div>Digite seu nome:</div>
+      <input type="text" id="inputNome" placeholder="Seu nome">
+      <button onclick="confirmarNome()">Confirmar</button>
+    </div>
+  </div>
+  
   <h2>📦 Leitor de Estoque</h2>
   <div id="usuarioBarra">Usuário: <b id="nomeAtual">-</b> · <a href="#" onclick="trocarUsuario(); return false;">trocar</a></div>
 
@@ -67,26 +105,35 @@
     const scanner = new Html5Qrcode("reader");
 
     function garantirUsuario() {
+      document.getElementById('nomeAtual').innerText = nomeUsuario || '-';
       if (!nomeUsuario) {
-        trocarUsuario();
-      } else {
-        document.getElementById('nomeAtual').innerText = nomeUsuario;
+        abrirModalUsuario();
       }
     }
 
     function trocarUsuario() {
-      const novo = prompt('Digite seu nome:', nomeUsuario || '');
-      if (novo && novo.trim()) {
-        nomeUsuario = novo.trim();
+      abrirModalUsuario();
+    }
+
+    function abrirModalUsuario() {
+      document.getElementById('inputNome').value = nomeUsuario || '';
+      document.getElementById('modalUsuario').style.display = 'flex';
+    }
+
+    function confirmarNome() {
+      const valor = document.getElementById('inputNome').value.trim();
+      if (valor) {
+        nomeUsuario = valor;
         localStorage.setItem('nomeUsuarioEstoque', nomeUsuario);
         document.getElementById('nomeAtual').innerText = nomeUsuario;
+        document.getElementById('modalUsuario').style.display = 'none';
       }
     }
 
     garantirUsuario();
 
     document.getElementById('btnAtivar').addEventListener('click', () => {
-      if (!nomeUsuario) { garantirUsuario(); }
+      if (!nomeUsuario) { abrirModalUsuario(); return; }
       document.getElementById('resultado').innerText = 'Solicitando câmera...';
       scanner.start(
         { facingMode: "environment" },
