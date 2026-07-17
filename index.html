@@ -10,6 +10,29 @@
   #resultado { margin-top:20px; font-size:18px; padding:14px; border-radius:8px; min-height:24px; }
   .ok{background:#d4edda;color:#155724;} .erro{background:#f8d7da;color:#721c24;} .info{background:#e2e3e5;color:#383d41;}
   button { font-size:18px; padding:14px 24px; margin-top:16px; cursor:pointer; }
+
+  #painel {
+    display:none;
+    max-width:400px;
+    margin:16px auto 0 auto;
+    background:#fff;
+    border-radius:10px;
+    padding:16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  #painel .codigo { font-size:14px; color:#666; margin-bottom:10px; }
+  #painel input[type=number] {
+    width:80px;
+    font-size:20px;
+    text-align:center;
+    padding:8px;
+    margin:10px 0;
+  }
+  #painel .botoes { display:flex; gap:10px; margin-top:10px; }
+  #painel .botoes button { flex:1; font-size:16px; padding:12px; margin-top:0; }
+  .btn-retirar { background:#f8d7da; border:1px solid #f1a9b0; }
+  .btn-adicionar { background:#d4edda; border:1px solid #9fd6ac; }
+  .btn-cancelar { background:#e2e3e5; border:1px solid #c6c8ca; margin-top:8px; width:100%; }
 </style>
 </head>
 <body>
@@ -18,12 +41,24 @@
   <div id="resultado" class="info">Toque no botão para ativar a câmera</div>
   <button id="btnAtivar">📷 Ativar câmera</button>
 
+  <div id="painel">
+    <div class="codigo">Código lido: <b id="codigoLido"></b></div>
+    <div>Quantidade:</div>
+    <input type="number" id="quantidade" value="1" min="1">
+    <div class="botoes">
+      <button class="btn-retirar" onclick="enviarMovimento('saida')">➖ Retirar</button>
+      <button class="btn-adicionar" onclick="enviarMovimento('entrada')">➕ Adicionar</button>
+    </div>
+    <button class="btn-cancelar" onclick="cancelarPainel()">Cancelar / continuar escaneando</button>
+  </div>
+
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
     // ⚠️ Troque pela URL do SEU Web App (terminando em /exec)
     const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbwRnoIjSSc_naWngA7GyIezgqaGOsXtvpZL3UtZjujRAHNQpCyIzn84cj1bLaJWEEx7/exec";
 
     let processando = false;
+    let codigoAtual = null;
     const scanner = new Html5Qrcode("reader");
 
     document.getElementById('btnAtivar').addEventListener('click', () => {
@@ -44,30 +79,57 @@
     function aoLer(codigo) {
       if (processando) return;
       processando = true;
+      codigoAtual = codigo;
+
+      scanner.pause(true);
+      document.getElementById('codigoLido').innerText = codigo;
+      document.getElementById('quantidade').value = 1;
+      document.getElementById('painel').style.display = 'block';
+      document.getElementById('resultado').className = 'info';
+      document.getElementById('resultado').innerText = 'Escolha a ação abaixo';
+    }
+
+    function cancelarPainel() {
+      document.getElementById('painel').style.display = 'none';
+      document.getElementById('resultado').className = 'info';
+      document.getElementById('resultado').innerText = 'Aponte para o QR code';
+      processando = false;
+      scanner.resume();
+    }
+
+    function enviarMovimento(tipo) {
+      const quantidade = parseInt(document.getElementById('quantidade').value, 10) || 1;
+
+      document.getElementById('painel').style.display = 'none';
       document.getElementById('resultado').className = 'info';
       document.getElementById('resultado').innerText = 'Processando...';
 
       fetch(URL_APPS_SCRIPT, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ codigo: codigo })
+        body: JSON.stringify({ codigo: codigoAtual, tipo: tipo, quantidade: quantidade })
       })
       .then(r => r.json())
       .then(res => {
         const div = document.getElementById('resultado');
         if (res.sucesso) {
+          const sinal = res.tipo === 'entrada' ? '+' : '-';
           div.className = 'ok';
-          div.innerText = `✔ ${res.nome} — restam ${res.quantidade} unidade(s)`;
+          div.innerText = `✔ ${res.nome} (${sinal}${res.movimentado}) — estoque atual: ${res.quantidade}`;
         } else {
           div.className = 'erro';
           div.innerText = `✘ ${res.mensagem}`;
         }
-        setTimeout(() => { processando = false; }, 2000);
+        setTimeout(() => {
+          processando = false;
+          scanner.resume();
+        }, 2500);
       })
       .catch(err => {
         document.getElementById('resultado').className = 'erro';
         document.getElementById('resultado').innerText = 'Erro de conexão: ' + err;
         processando = false;
+        scanner.resume();
       });
     }
   </script>
