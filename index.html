@@ -10,7 +10,7 @@
   #usuarioBarra a { color:#0d6efd; text-decoration:none; }
   #reader { width:100%; max-width:400px; margin:0 auto; border-radius:8px; overflow:hidden; }
   #resultado { margin-top:20px; font-size:18px; padding:14px; border-radius:8px; min-height:24px; }
-  .ok{background:#d4edda;color:#155724;} .erro{background:#f8d7da;color:#721c24;} .info{background:#e2e3e5;color:#383d41;}
+  .ok{background:#d4edda;color:#155724;} .erro{background:#f8d7da;color:#721c24;} .info{background:#e2e3e5;color:#383d41;} .alerta{background:#fff3cd;color:#856404;}
   button { font-size:18px; padding:14px 24px; margin-top:16px; cursor:pointer; }
 
   #painel {
@@ -23,47 +23,22 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.15);
   }
   #painel .codigo { font-size:14px; color:#666; margin-bottom:10px; }
-  #painel input[type=number] {
+  .botoesRapidos { display:flex; gap:10px; }
+  .botoesRapidos button { flex:1; font-size:17px; padding:16px 8px; margin-top:0; }
+  #linkCustom { display:inline-block; margin-top:14px; font-size:14px; color:#0d6efd; text-decoration:none; }
+  #areaCustom { display:none; margin-top:12px; }
+  #areaCustom input[type=number] {
     width:80px;
     font-size:20px;
     text-align:center;
     padding:8px;
     margin:10px 0;
   }
-  #painel .botoes { display:flex; gap:10px; margin-top:10px; }
-  #painel .botoes button { flex:1; font-size:16px; padding:12px; margin-top:0; }
+  #areaCustom .botoes { display:flex; gap:10px; margin-top:6px; }
+  #areaCustom .botoes button { flex:1; font-size:15px; padding:10px; margin-top:0; }
   .btn-retirar { background:#f8d7da; border:1px solid #f1a9b0; }
   .btn-adicionar { background:#d4edda; border:1px solid #9fd6ac; }
-  .btn-cancelar { background:#e2e3e5; border:1px solid #c6c8ca; margin-top:8px; width:100%; }
-
-  #modalUsuario {
-    display:none;
-    position:fixed;
-    top:0; left:0; right:0; bottom:0;
-    background:rgba(0,0,0,0.5);
-    align-items:center;
-    justify-content:center;
-    z-index:1000;
-  }
-  #modalUsuario .caixa {
-    background:#fff;
-    border-radius:10px;
-    padding:20px;
-    width:85%;
-    max-width:320px;
-    text-align:center;
-  }
-  #modalUsuario input {
-    width:100%;
-    font-size:18px;
-    padding:10px;
-    margin:14px 0;
-    box-sizing:border-box;
-  }
-  #modalUsuario button {
-    width:100%;
-    margin-top:0;
-  }
+  .btn-cancelar { background:#e2e3e5; border:1px solid #c6c8ca; margin-top:14px; width:100%; }
 
   #modalPin {
     display:flex;
@@ -92,10 +67,7 @@
     margin:14px 0;
     box-sizing:border-box;
   }
-  #modalPin button {
-    width:100%;
-    margin-top:0;
-  }
+  #modalPin button { width:100%; margin-top:0; }
   #pinErro { color:#c0392b; font-size:14px; min-height:18px; margin-top:6px; }
   #conteudoApp { display:none; }
 </style>
@@ -104,8 +76,8 @@
 
   <div id="modalPin">
     <div class="caixa">
-      <div>🔒 Digite a senha de acesso</div>
-      <input type="password" id="inputPin" inputmode="numeric" placeholder="Senha">
+      <div>🔒 Digite seu PIN</div>
+      <input type="password" id="inputPin" inputmode="numeric" placeholder="PIN">
       <button onclick="conferirPin()">Entrar</button>
       <div id="pinErro"></div>
     </div>
@@ -121,21 +93,23 @@
 
     <div id="painel">
       <div class="codigo">Código lido: <b id="codigoLido"></b></div>
-      <div>Quantidade:</div>
-      <input type="number" id="quantidade" value="1" min="1">
-      <div class="botoes">
-        <button class="btn-retirar" onclick="enviarMovimento('saida')">➖ Retirar</button>
-        <button class="btn-adicionar" onclick="enviarMovimento('entrada')">➕ Adicionar</button>
-      </div>
-      <button class="btn-cancelar" onclick="cancelarPainel()">Cancelar / continuar escaneando</button>
-    </div>
-  </div><!-- fecha #conteudoApp -->
 
-  <div id="modalUsuario">
-    <div class="caixa">
-      <div>Digite seu nome:</div>
-      <input type="text" id="inputNome" placeholder="Seu nome">
-      <button onclick="confirmarNome()">Confirmar</button>
+      <div class="botoesRapidos">
+        <button class="btn-retirar" onclick="movimentoRapido('saida')">➖ Retirar 1</button>
+        <button class="btn-adicionar" onclick="movimentoRapido('entrada')">➕ Adicionar 1</button>
+      </div>
+
+      <a href="#" id="linkCustom" onclick="mostrarCustom(); return false;">Outra quantidade</a>
+
+      <div id="areaCustom">
+        <input type="number" id="quantidade" value="1" min="1">
+        <div class="botoes">
+          <button class="btn-retirar" onclick="enviarMovimento('saida')">➖ Retirar</button>
+          <button class="btn-adicionar" onclick="enviarMovimento('entrada')">➕ Adicionar</button>
+        </div>
+      </div>
+
+      <button class="btn-cancelar" onclick="cancelarPainel()">Cancelar / continuar escaneando</button>
     </div>
   </div>
 
@@ -144,59 +118,54 @@
     // ⚠️ Troque pela URL do SEU Web App (terminando em /exec)
     const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbwRnoIjSSc_naWngA7GyIezgqaGOsXtvpZL3UtZjujRAHNQpCyIzn84cj1bLaJWEEx7/exec";
 
-    const SENHA_CORRETA = "1924";
-
-    function conferirPin() {
-      const valor = document.getElementById('inputPin').value.trim();
-      if (valor === SENHA_CORRETA) {
-        localStorage.setItem('pinLiberadoEstoque', 'ok');
-        document.getElementById('modalPin').style.display = 'none';
-        document.getElementById('conteudoApp').style.display = 'block';
-        garantirUsuario();
-      } else {
-        document.getElementById('pinErro').innerText = 'Senha incorreta';
-        document.getElementById('inputPin').value = '';
-      }
-    }
-
-    if (localStorage.getItem('pinLiberadoEstoque') === 'ok') {
-      document.getElementById('modalPin').style.display = 'none';
-      document.getElementById('conteudoApp').style.display = 'block';
-    }
-
     let nomeUsuario = localStorage.getItem('nomeUsuarioEstoque') || '';
     let processando = false;
     let codigoAtual = null;
     const scanner = new Html5Qrcode("reader");
 
-    function garantirUsuario() {
-      document.getElementById('nomeAtual').innerText = nomeUsuario || '-';
-      if (!nomeUsuario) {
-        abrirModalUsuario();
-      }
+    if (nomeUsuario) {
+      document.getElementById('modalPin').style.display = 'none';
+      document.getElementById('conteudoApp').style.display = 'block';
+      document.getElementById('nomeAtual').innerText = nomeUsuario;
+    }
+
+    function conferirPin() {
+      const pin = document.getElementById('inputPin').value.trim();
+      if (!pin) return;
+
+      document.getElementById('pinErro').innerText = 'Verificando...';
+
+      fetch(URL_APPS_SCRIPT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ acao: 'validarPin', pin: pin })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.sucesso) {
+          nomeUsuario = res.nome;
+          localStorage.setItem('nomeUsuarioEstoque', nomeUsuario);
+          document.getElementById('nomeAtual').innerText = nomeUsuario;
+          document.getElementById('modalPin').style.display = 'none';
+          document.getElementById('conteudoApp').style.display = 'block';
+          document.getElementById('inputPin').value = '';
+          document.getElementById('pinErro').innerText = '';
+        } else {
+          document.getElementById('pinErro').innerText = res.mensagem || 'PIN incorreto';
+          document.getElementById('inputPin').value = '';
+        }
+      })
+      .catch(err => {
+        document.getElementById('pinErro').innerText = 'Erro de conexão, tente de novo.';
+      });
     }
 
     function trocarUsuario() {
-      abrirModalUsuario();
-    }
-
-    function abrirModalUsuario() {
-      document.getElementById('inputNome').value = nomeUsuario || '';
-      document.getElementById('modalUsuario').style.display = 'flex';
-    }
-
-    function confirmarNome() {
-      const valor = document.getElementById('inputNome').value.trim();
-      if (valor) {
-        nomeUsuario = valor;
-        localStorage.setItem('nomeUsuarioEstoque', nomeUsuario);
-        document.getElementById('nomeAtual').innerText = nomeUsuario;
-        document.getElementById('modalUsuario').style.display = 'none';
-      }
-    }
-
-    if (localStorage.getItem('pinLiberadoEstoque') === 'ok') {
-      garantirUsuario();
+      nomeUsuario = '';
+      localStorage.removeItem('nomeUsuarioEstoque');
+      document.getElementById('conteudoApp').style.display = 'none';
+      document.getElementById('modalPin').style.display = 'flex';
+      document.getElementById('inputPin').value = '';
     }
 
     function tocarBipe() {
@@ -216,7 +185,6 @@
     }
 
     document.getElementById('btnAtivar').addEventListener('click', () => {
-      if (!nomeUsuario) { abrirModalUsuario(); return; }
       document.getElementById('resultado').innerText = 'Solicitando câmera...';
       scanner.start(
         { facingMode: "environment" },
@@ -241,9 +209,14 @@
       scanner.pause(true);
       document.getElementById('codigoLido').innerText = codigo;
       document.getElementById('quantidade').value = 1;
+      document.getElementById('areaCustom').style.display = 'none';
       document.getElementById('painel').style.display = 'block';
       document.getElementById('resultado').className = 'info';
       document.getElementById('resultado').innerText = 'Escolha a ação abaixo';
+    }
+
+    function mostrarCustom() {
+      document.getElementById('areaCustom').style.display = 'block';
     }
 
     function cancelarPainel() {
@@ -252,6 +225,11 @@
       document.getElementById('resultado').innerText = 'Aponte para o QR code';
       processando = false;
       scanner.resume();
+    }
+
+    function movimentoRapido(tipo) {
+      document.getElementById('quantidade').value = 1;
+      enviarMovimento(tipo);
     }
 
     function enviarMovimento(tipo) {
@@ -271,8 +249,13 @@
         const div = document.getElementById('resultado');
         if (res.sucesso) {
           const sinal = res.tipo === 'entrada' ? '+' : '-';
-          div.className = 'ok';
-          div.innerText = `✔ ${res.nome} (${sinal}${res.movimentado}) — estoque atual: ${res.quantidade}`;
+          if (res.estoqueBaixo) {
+            div.className = 'alerta';
+            div.innerText = `✔ ${res.nome} (${sinal}${res.movimentado}) — estoque atual: ${res.quantidade} ⚠️ ESTOQUE BAIXO`;
+          } else {
+            div.className = 'ok';
+            div.innerText = `✔ ${res.nome} (${sinal}${res.movimentado}) — estoque atual: ${res.quantidade}`;
+          }
         } else {
           div.className = 'erro';
           div.innerText = `✘ ${res.mensagem}`;
