@@ -64,9 +64,72 @@
     width:100%;
     margin-top:0;
   }
+
+  #modalPin {
+    display:flex;
+    position:fixed;
+    top:0; left:0; right:0; bottom:0;
+    background:#f4f4f4;
+    align-items:center;
+    justify-content:center;
+    z-index:2000;
+  }
+  #modalPin .caixa {
+    background:#fff;
+    border-radius:10px;
+    padding:24px;
+    width:85%;
+    max-width:320px;
+    text-align:center;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+  }
+  #modalPin input {
+    width:100%;
+    font-size:24px;
+    text-align:center;
+    letter-spacing:6px;
+    padding:12px;
+    margin:14px 0;
+    box-sizing:border-box;
+  }
+  #modalPin button {
+    width:100%;
+    margin-top:0;
+  }
+  #pinErro { color:#c0392b; font-size:14px; min-height:18px; margin-top:6px; }
+  #conteudoApp { display:none; }
 </style>
 </head>
 <body>
+
+  <div id="modalPin">
+    <div class="caixa">
+      <div>🔒 Digite a senha de acesso</div>
+      <input type="password" id="inputPin" inputmode="numeric" placeholder="Senha">
+      <button onclick="conferirPin()">Entrar</button>
+      <div id="pinErro"></div>
+    </div>
+  </div>
+
+  <div id="conteudoApp">
+    <div id="usuarioBarra">Usuário: <b id="nomeAtual">-</b> · <a href="#" onclick="trocarUsuario(); return false;">trocar</a></div>
+
+    <h2>📦 Leitor de Estoque</h2>
+    <div id="reader"></div>
+    <div id="resultado" class="info">Toque no botão para ativar a câmera</div>
+    <button id="btnAtivar">📷 Ativar câmera</button>
+
+    <div id="painel">
+      <div class="codigo">Código lido: <b id="codigoLido"></b></div>
+      <div>Quantidade:</div>
+      <input type="number" id="quantidade" value="1" min="1">
+      <div class="botoes">
+        <button class="btn-retirar" onclick="enviarMovimento('saida')">➖ Retirar</button>
+        <button class="btn-adicionar" onclick="enviarMovimento('entrada')">➕ Adicionar</button>
+      </div>
+      <button class="btn-cancelar" onclick="cancelarPainel()">Cancelar / continuar escaneando</button>
+    </div>
+  </div><!-- fecha #conteudoApp -->
 
   <div id="modalUsuario">
     <div class="caixa">
@@ -75,29 +138,31 @@
       <button onclick="confirmarNome()">Confirmar</button>
     </div>
   </div>
-  
-  <h2>📦 Leitor de Estoque</h2>
-  <div id="usuarioBarra">Usuário: <b id="nomeAtual">-</b> · <a href="#" onclick="trocarUsuario(); return false;">trocar</a></div>
-
-  <div id="reader"></div>
-  <div id="resultado" class="info">Toque no botão para ativar a câmera</div>
-  <button id="btnAtivar">📷 Ativar câmera</button>
-
-  <div id="painel">
-    <div class="codigo">Código lido: <b id="codigoLido"></b></div>
-    <div>Quantidade:</div>
-    <input type="number" id="quantidade" value="1" min="1">
-    <div class="botoes">
-      <button class="btn-retirar" onclick="enviarMovimento('saida')">➖ Retirar</button>
-      <button class="btn-adicionar" onclick="enviarMovimento('entrada')">➕ Adicionar</button>
-    </div>
-    <button class="btn-cancelar" onclick="cancelarPainel()">Cancelar / continuar escaneando</button>
-  </div>
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
     // ⚠️ Troque pela URL do SEU Web App (terminando em /exec)
     const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbwRnoIjSSc_naWngA7GyIezgqaGOsXtvpZL3UtZjujRAHNQpCyIzn84cj1bLaJWEEx7/exec";
+
+    const SENHA_CORRETA = "1924";
+
+    function conferirPin() {
+      const valor = document.getElementById('inputPin').value.trim();
+      if (valor === SENHA_CORRETA) {
+        localStorage.setItem('pinLiberadoEstoque', 'ok');
+        document.getElementById('modalPin').style.display = 'none';
+        document.getElementById('conteudoApp').style.display = 'block';
+        garantirUsuario();
+      } else {
+        document.getElementById('pinErro').innerText = 'Senha incorreta';
+        document.getElementById('inputPin').value = '';
+      }
+    }
+
+    if (localStorage.getItem('pinLiberadoEstoque') === 'ok') {
+      document.getElementById('modalPin').style.display = 'none';
+      document.getElementById('conteudoApp').style.display = 'block';
+    }
 
     let nomeUsuario = localStorage.getItem('nomeUsuarioEstoque') || '';
     let processando = false;
@@ -130,7 +195,25 @@
       }
     }
 
-    garantirUsuario();
+    if (localStorage.getItem('pinLiberadoEstoque') === 'ok') {
+      garantirUsuario();
+    }
+
+    function tocarBipe() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } catch (e) {}
+    }
 
     document.getElementById('btnAtivar').addEventListener('click', () => {
       if (!nomeUsuario) { abrirModalUsuario(); return; }
@@ -148,30 +231,12 @@
       });
     });
 
-    function tocarBipe() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.value = 880; // frequência do bipe
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-      } catch (e) {
-        // navegador sem suporte, ignora silenciosamente
-      }
-    }
-
     function aoLer(codigo) {
       if (processando) return;
       processando = true;
       codigoAtual = codigo;
 
-      tocarBipe();  // ← linha nova
+      tocarBipe();
 
       scanner.pause(true);
       document.getElementById('codigoLido').innerText = codigo;
@@ -180,6 +245,7 @@
       document.getElementById('resultado').className = 'info';
       document.getElementById('resultado').innerText = 'Escolha a ação abaixo';
     }
+
     function cancelarPainel() {
       document.getElementById('painel').style.display = 'none';
       document.getElementById('resultado').className = 'info';
