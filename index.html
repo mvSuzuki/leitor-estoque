@@ -188,7 +188,12 @@
       document.getElementById('resultado').innerText = 'Solicitando câmera...';
       scanner.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
+        {
+          fps: 20,
+          qrbox: { width: 220, height: 220 },
+          formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+        },
         aoLer
       ).then(() => {
         document.getElementById('btnAtivar').style.display = 'none';
@@ -263,7 +268,7 @@
         setTimeout(() => {
           processando = false;
           scanner.resume();
-        }, 2500);
+        }, 1000);
       })
       .catch(err => {
         document.getElementById('resultado').className = 'erro';
